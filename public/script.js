@@ -9,6 +9,7 @@ var peer = new Peer(undefined, {
 const videoGrid = document.getElementById('video-grid');
 const myVideo = document.createElement('video');
 myVideo.muted = true;
+const peers = {};
 
 let myVideoStream;
 
@@ -31,6 +32,11 @@ navigator.mediaDevices.getUserMedia({
         setTimeout(connecToNewUser, 1000, userId, stream);
         // connecToNewUser(userId, stream);
     });
+
+    socket.on('user-disconnected', userId => {
+        if (peers[userId])
+            peers[userId].close();
+    });
 });
 
 peer.on('open', id => {
@@ -43,6 +49,10 @@ const connecToNewUser = (userId, stream) => {
     call.on('stream', userVideoStream => {
         addVideoStream(video, userVideoStream);
     });
+    call.on('close', () => {
+        video.remove();
+    });
+    peers[userId] = call;
 }
 
 const addVideoStream = (video, stream) => {
@@ -62,9 +72,9 @@ $('html').keydown(e => {
     }
 });
 
-socket.on('createMessage', message => {
+socket.on('createMessage', (message, userId) => {
     console.log(message);
-    $('ul').append(`<li class="message"><b>user</b><br/>${message}</li>`);
+    $('ul').append(`<li class="message"><b>${userId}</b><br/>${message}</li>`);
     scrollToBottom();
 });
 
